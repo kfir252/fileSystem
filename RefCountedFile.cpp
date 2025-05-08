@@ -112,7 +112,9 @@ public:
     }
 
     ~RefCountedFile() {
+        //release() fatherLink also
         release();
+
     }
 
     void release() {
@@ -156,14 +158,15 @@ public:
 
     // Delete a file
     static void remove(const std::string& filename) {
+
         if (!std::filesystem::remove(filename))
             throw FileException("Failed to remove file: " + filename);
     }
 
     // Move file from src to dst (copy then remove)
     static void move(const std::string& src, const std::string& dst) {
-        copy(src, dst);
-        remove(src);
+        copy(src, dst);//chose to do a new copy here
+        remove(src);//delete the old src
     }
 
     // Display contents of file with reference count
@@ -176,9 +179,9 @@ public:
         std::string line;
 
         // Also print refCount and filename
-        std::cout << data->filename << " (refs: " << data->refCount << ")\n";
+        // std::cout << data->filename << " (refs: " << data->refCount << ")\n";
         while (std::getline(in, line)) {
-            std::cout << line << '\n';
+            std::cout << line << std::endl;
         }
     }
 
