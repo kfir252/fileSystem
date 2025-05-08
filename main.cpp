@@ -43,7 +43,7 @@ void test3() {
         cout << f1[0] << f1[1] << f1[2] << '\n';
         RefCountedFile::copy("here.txt", "Lala.txt");
         RefCountedFile f2("Lala.txt");
-
+        RefCountedFile::remove("Lala.txt");
 
 
     } catch (const std::exception& e) {
