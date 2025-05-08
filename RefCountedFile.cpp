@@ -132,15 +132,17 @@ public:
     // Release function: decrease ref count and delete if zero
     void release() {
         if (!released && --data->refCount == 0) {
+            std::string filenameToDelete = data->filename;  // ✅ שמור את שם הקובץ
             delete data;
             try {
-                std::filesystem::remove(data->filename);  // Delete the file from the filesystem
+                std::filesystem::remove(filenameToDelete);  // ✅ השתמש בשם שמור
             } catch (const std::filesystem::filesystem_error& e) {
                 std::cerr << "Warning: Failed to delete file: " << e.what() << std::endl;
             }
         }
         released = true;
     }
+
 
     // Creates the file if it doesn't exist and updates its modification time
     static void touch(const std::string& filename) {
