@@ -15,7 +15,6 @@ void testCopy() {
     RefCountedFile f2("Lala.txt");
     f1.cat();
     f2.cat();
-
 }
 
 
@@ -105,6 +104,7 @@ void testSystem() {
 
     //chdir mkdir check
     vd.mkdir("tmp");
+    vd.chdir("tmp");
     vd.ls();
 
 }
@@ -112,9 +112,23 @@ void testSystem() {
 void testSystem2() {
     VirtualDirectory vd;
     vd.touch("file.txt");
-    vd.ls();
-    cout << "ok";
+    vd.mkdir("tmp1");
+    vd.mkdir("tmp2");
+    vd.chdir("tmp1");
 
+    vd.mkdir("lalala");
+    vd.touch("V/tmp1/lalala/file.txt");
+
+    vd.write("V/tmp1/lalala/file.txt", 0, 'W');
+    vd.chdir("lalala");
+    vd.write("file.txt", 1, 'X');
+
+    vd.read("V/tmp1/lalala/file.txt", 0);
+    vd.read("V/tmp1/lalala/file.txt", 1);
+
+    vd.copy("file.txt", "file2.txt");
+
+    vd.proot();
 }
 
 

@@ -346,7 +346,7 @@ public:
             temp = temp->parent;
         }
         for (auto it = path.rbegin(); it != path.rend(); ++it) {
-            std::cout << "/" << *it;
+            std::cout << *it << "/";
         }
         std::cout << '\n';
     }
@@ -360,23 +360,79 @@ public:
         std::string fileName = getFileNameFromPath(FilePath);
         Node* where = current;
 
-        if (startsWithVSlash(FilePath)) {
-            //TODO here I need first to get the full path
+        if (startsWithVSlash(FilePath))
+            where = getNodeFromPath(FilePath);
 
-            RefCountedFile::touch(convertSlashesToUnderscores(FilePath));
-        }
-        else {
-            RefCountedFile::touch(fileName);
-            // if (current->files.count(getFileNameFromPath(FilePath))) {
-            //     throw FileException("File already exists in virtual directory.");
-            // }
-            //add to this current PWD folder
-            current->files.emplace(fileName, RefCountedFile(fileName));
-        }
-
+        RefCountedFile::touch(fileName);
+        where->files.emplace(fileName, RefCountedFile(fileName));
     }
-    void write(const std::string& FilePath, const int pos, const char character) {
 
+    void write(const std::string& FilePath, const int pos, const char character) {
+        auto it = getRefCountedFileFromPath(FilePath);
+        it[pos] = character;
+    }
+
+    void read(const std::string& FilePath, const int pos) {
+        auto it = getRefCountedFileFromPath(FilePath);
+        std::cout << it[pos] << std::endl;
+    }
+    void copy(const std::string& FilePathSrc, const std::string& FilePathDst) {
+        std::string srcFileName = getFileNameFromPath(FilePathSrc);
+        std::string dstFileName = getFileNameFromPath(FilePathDst);
+
+        touch(FilePathDst);
+        RefCountedFile::copy(srcFileName, dstFileName);
+    }
+
+
+
+
+    //the most important thing here for working with full paths
+    Node* getNodeFromPath(const std::string& path) {
+        if (path.empty()) return nullptr;
+
+        // Remove the last component after the final '/'
+        size_t lastSlash = path.find_last_of('/');
+        if (lastSlash == std::string::npos) {
+            return nullptr; // invalid path
+        }
+        std::string directoryPath = path.substr(0, lastSlash); // remove the last segment
+
+        Node* currentNode = root;
+
+        std::stringstream ss(directoryPath);
+        std::string segment;
+
+        // Skip the root prefix like "V" if needed
+        std::getline(ss, segment, '/');
+        if (segment != "V") return nullptr;
+
+        // Traverse the path
+        while (std::getline(ss, segment, '/')) {
+            if (segment.empty()) continue;
+
+            auto it = currentNode->subdirs.find(segment);
+            if (it == currentNode->subdirs.end()) {
+                return nullptr; // Directory not found
+            }
+
+            currentNode = it->second;
+        }
+        return currentNode;
+    }
+
+    RefCountedFile& getRefCountedFileFromPath(const std::string& path) {
+        std::string fileName = getFileNameFromPath(path);
+        Node* where = current;
+
+        if (startsWithVSlash(path))
+            where = getNodeFromPath(path);
+
+        auto it = where->files.find(fileName);
+        if (it == where->files.end()) {
+            throw FileException("File not found");
+        }
+        return it->second;
     }
 
 
