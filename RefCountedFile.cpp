@@ -284,23 +284,20 @@ public:
         current = root;
     }
 
-    void mkdir(const std::string& dirname) {
-        if (current->subdirs.count(dirname)) {
-            throw FileException("Directory already exists: " + dirname);
+    void mkdir(const std::string& path) {
+        Node* where = getNodeFromPath(path);
+        std::string dirname = getFileNameFromPath(path);
+        if (where->subdirs.count(dirname)) {
+            throw FileException("folder already exist");
         }
-        current->subdirs[dirname] = new Node(dirname, current);
+        else {
+            where->subdirs.emplace(dirname, new Node(dirname, where));
+        }
+
     }
 
     void chdir(const std::string& dirname) {
-        if (dirname == "..") {
-            if (current->parent) {
-                current = current->parent;
-            }
-        } else if (current->subdirs.count(dirname)) {
-            current = current->subdirs[dirname];
-        } else {
-            throw FileException("Directory not found: " + dirname);
-        }
+        current = getNodeFromPathForDirSearch(dirname);
     }
 
     void rmdir(const std::string& dirname) {
@@ -358,20 +355,18 @@ public:
     // Add clean file to system
     void touch(const std::string& FilePath) {
         std::string fileName = getFileNameFromPath(FilePath);
-        Node* where = current;
 
+        Node* where = current;
         if (startsWithVSlash(FilePath))
             where = getNodeFromPath(FilePath);
 
         RefCountedFile::touch(fileName);
         where->files.emplace(fileName, RefCountedFile(fileName));
     }
-
     void write(const std::string& FilePath, const int pos, const char character) {
         auto it = getRefCountedFileFromPath(FilePath);
         it[pos] = character;
     }
-
     void read(const std::string& FilePath, const int pos) {
         auto it = getRefCountedFileFromPath(FilePath);
         std::cout << it[pos] << std::endl;
@@ -383,9 +378,66 @@ public:
         touch(FilePathDst);
         RefCountedFile::copy(srcFileName, dstFileName);
     }
+    void remove(const std::string& FilePath) {
+        std::string FileName = getFileNameFromPath(FilePath);
+        auto file = getRefCountedFileFromPath(FilePath);
+        auto folder = getNodeFromPath(FilePath);
+        folder->files.erase(FileName);
+        file.release();
+    }
+
+    // void move(const std::string& FilePathSrc, const std::string& FilePathDst) {
+    //
+    // }
+    void cat(const std::string& FilePath) {
+        auto it = getRefCountedFileFromPath(FilePath);
+        it.cat();
+    }
+    void wc(const std::string& FilePath) {
+        auto it = getRefCountedFileFromPath(FilePath);
+        it.wc();
+    }
 
 
 
+    //the most important thing here for working with full paths
+    Node* getNodeFromPathForDirSearch(const std::string& path) {
+        if (path.empty()) return nullptr;
+
+        // Remove the last component after the final '/'
+        size_t lastSlash = path.find_last_of('/');
+        if (lastSlash == std::string::npos) {
+            auto it = current->subdirs.find(path);
+            if (it == current->subdirs.end()) {
+                throw FileException("folder not found");
+            }
+            return it->second;
+        }
+        std::string directoryPath = path;
+
+        Node* currentNode = root;
+
+        std::stringstream ss(directoryPath);
+        std::string segment;
+
+        // Skip the root prefix like "V" if needed
+        std::getline(ss, segment, '/');
+        if (segment != "V") return nullptr;
+
+        // Traverse the path
+        while (std::getline(ss, segment, '/')) {
+            if (segment.empty()) continue;
+
+            auto it = currentNode->subdirs.find(segment);
+            if (it == currentNode->subdirs.end()) {
+                throw FileException("folder not found");
+                return current; // Directory not found
+            }
+
+            currentNode = it->second;
+        }
+        return currentNode;
+    }
 
     //the most important thing here for working with full paths
     Node* getNodeFromPath(const std::string& path) {
@@ -394,7 +446,7 @@ public:
         // Remove the last component after the final '/'
         size_t lastSlash = path.find_last_of('/');
         if (lastSlash == std::string::npos) {
-            return nullptr; // invalid path
+            return current; // invalid path
         }
         std::string directoryPath = path.substr(0, lastSlash); // remove the last segment
 

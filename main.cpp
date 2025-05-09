@@ -111,7 +111,7 @@ void testSystem() {
 
 void testSystem2() {
     VirtualDirectory vd;
-    vd.touch("file.txt");
+    vd.touch("furst.txt");
     vd.mkdir("tmp1");
     vd.mkdir("tmp2");
     vd.chdir("tmp1");
@@ -127,11 +127,34 @@ void testSystem2() {
     vd.read("V/tmp1/lalala/file.txt", 1);
 
     vd.copy("file.txt", "file2.txt");
+    vd.copy("file.txt", "V/tmp2/fafa.t");
+    vd.proot();
+
+    vd.remove("V/tmp2/fafa.t");
+    vd.remove("file.txt");
+    vd.proot();
+
+    vd.cat("file2.txt");
+    vd.cat("V/tmp1/lalala/file2.txt");
+    vd.wc("V/tmp1/lalala/file2.txt");
+}
+
+void testSystem3() {
+    VirtualDirectory vd;
+    vd.mkdir("tmp1");
+    vd.mkdir("V/tmp2");
+    vd.mkdir("V/tmp2/dddddddddd");
+    vd.chdir("tmp1");
+    vd.pwd();
+    vd.mkdir("lalala");
+    vd.chdir("lalala");
+    vd.pwd();
+    vd.chdir("V/tmp2");
+    vd.pwd();
+
 
     vd.proot();
 }
-
-
 int main() {
     // testCopy();
     // testRemove();
@@ -139,7 +162,8 @@ int main() {
     // testWC();
     // testLink();
     // testSystem();
-    testSystem2();
+    // testSystem2();
+    testSystem3();
     return 0;
 }
 
