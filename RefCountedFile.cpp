@@ -149,6 +149,7 @@ public:
 
     // Copy contents from one file to another
     static void copy(const std::string& src, const std::string& dst) {
+        if (src == dst) return;
         touch(src);
 
         std::ifstream in(src, std::ios::binary);
@@ -172,7 +173,9 @@ public:
     // Move file from src to dst (copy then remove)
     static void move(const std::string& src, const std::string& dst) {
         copy(src, dst);//chose to do a new copy here
-        remove(src);//delete the old src
+        if (src != dst) {
+            remove(src);//delete the old src
+        }
     }
 
     // Display contents of file with reference count
@@ -189,6 +192,7 @@ public:
         while (std::getline(in, line)) {
             std::cout << line << std::endl;
         }
+        in.close();
     }
 
     // Word count: count lines, words, and characters in file
@@ -296,24 +300,31 @@ public:
 
     }
 
-    void chdir(const std::string& dirname) {
-        current = getNodeFromPathForDirSearch(dirname);
+    void chdir(const std::string& path) {
+        current = getNodeFromPathForDirSearch(path);
     }
 
-    void rmdir(const std::string& dirname) {
-        if (!current->subdirs.count(dirname)) {
+    void rmdir(const std::string& path) {
+        Node* father = getNodeFromPath(path);
+        std::string dirname = getFileNameFromPath(path);
+
+
+        if (!father->subdirs.count(dirname)) {
             throw FileException("Directory not found: " + dirname);
         }
-        current->subdirs.erase(dirname);
+        father->subdirs.erase(dirname);
     }
 
-    void ls() const {
+    void ls(const std::string& path) const {
+        Node* folder = getNodeFromPathForDirSearch(path);
         std::cout << "Folder:" << std::flush;
+
         pwd();
-        for (const auto& [name, dir] : current->subdirs) {
+
+        for (const auto& [name, dir] : folder->subdirs) {
             std::cout << "  [D] " << name << '\n';
         }
-        for (const auto& [name, file] : current->files) {
+        for (const auto& [name, file] : folder->files) {
             std::cout << "  [F] " << name << " (refs: " << file.getRefCount() << ")\n";
         }
     }
@@ -324,7 +335,7 @@ public:
 
     void printRecursive(Node* node, int depth) const {
         std::string indent(depth * 2, ' ');
-        std::cout << indent << node->name << "/\n";
+        std::cout << indent << node->name << "/\n" << std::flush;
 
         for (const auto& [fname, file] : node->files) {
             std::cout << indent << "  " << fname << " (refs: " << file.getRefCount() << ")\n";
@@ -333,6 +344,7 @@ public:
         for (const auto& [_, subdir] : node->subdirs) {
             printRecursive(subdir, depth + 1);
         }
+        std::cout << std::flush;
     }
 
     void pwd() const {
@@ -386,9 +398,24 @@ public:
         file.release();
     }
 
-    // void move(const std::string& FilePathSrc, const std::string& FilePathDst) {
-    //
-    // }
+    void move(const std::string& FilePathSrc, const std::string& FilePathDst) {
+        if (FilePathSrc == FilePathDst) {
+            return;
+        }
+        std::string srcFileName = getFileNameFromPath(FilePathSrc);
+        std::string dstFileName = getFileNameFromPath(FilePathDst);
+
+        if (srcFileName == dstFileName) {
+            return;//TODO take the file and deep copy to somwere alse, then delete
+        }
+
+        RefCountedFile::move(srcFileName, dstFileName);
+        touch(FilePathDst);
+
+        auto folder = getNodeFromPath(FilePathSrc);
+        folder->files.erase(srcFileName);
+
+    }
     void cat(const std::string& FilePath) {
         auto it = getRefCountedFileFromPath(FilePath);
         it.cat();
@@ -401,7 +428,7 @@ public:
 
 
     //the most important thing here for working with full paths
-    Node* getNodeFromPathForDirSearch(const std::string& path) {
+    Node* getNodeFromPathForDirSearch(const std::string& path) const {
         if (path.empty()) return nullptr;
 
         // Remove the last component after the final '/'

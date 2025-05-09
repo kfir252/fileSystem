@@ -105,7 +105,7 @@ void testSystem() {
     //chdir mkdir check
     vd.mkdir("tmp");
     vd.chdir("tmp");
-    vd.ls();
+    vd.ls("V/tmp");
 
 }
 
@@ -155,6 +155,55 @@ void testSystem3() {
 
     vd.proot();
 }
+
+
+void testSystem4() {
+    VirtualDirectory vd;
+    vd.mkdir("tmp1");
+    vd.mkdir("V/tmp2");
+    vd.mkdir("V/tmp2/dddddddddd");
+    vd.mkdir("V/tmp2/1");
+    vd.mkdir("V/tmp2/1/okokok");
+    vd.proot();
+
+    vd.chdir("V/tmp2");
+    vd.pwd();
+    vd.rmdir("1");
+
+
+    vd.proot();
+}
+
+void testSystem5() {
+    VirtualDirectory vd;
+    vd.mkdir("tmp1");
+    vd.mkdir("V/tmp2");
+    vd.mkdir("V/tmp2/dddddddddd");
+    vd.mkdir("V/tmp3");
+    vd.mkdir("V/okokok");
+    vd.touch("V/test.txt");
+    vd.touch("V/2.txt");
+    vd.touch("4.txt");
+    vd.touch("V/test4.txt");
+    vd.ls("V/");
+    vd.rmdir("V/tmp2");
+    vd.ls("V/");
+}
+void testSystem6() {
+    VirtualDirectory vd;
+    vd.mkdir("tmp1");
+
+    vd.touch("V/tmp1/test.txt");
+    vd.write("V/tmp1/test.txt", 0, 'W');
+    vd.cat("V/tmp1/test.txt");
+    vd.cat("V/tmp1/test.txt");
+
+    vd.proot();
+
+    vd.move("V/tmp1/test.txt", "V/tmp1/test.txt");
+    vd.proot();
+    vd.cat("V/tmp1/test.txt");
+}
 int main() {
     // testCopy();
     // testRemove();
@@ -163,8 +212,12 @@ int main() {
     // testLink();
     // testSystem();
     // testSystem2();
-    testSystem3();
+    // testSystem3();
+    // testSystem4();
+    // testSystem5();
+    testSystem6();
     return 0;
+
 }
 
 
