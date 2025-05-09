@@ -228,9 +228,26 @@ public:
 
 
 
-
-
-
+///////////////////////////////////// HELP FUNCTIONS //////////////////
+static bool startsWithVSlash(const std::string& input) {
+    return input.size() >= 2 && input[0] == 'V' && input[1] == '/';
+}
+static std::string convertSlashesToUnderscores(const std::string& input) {
+    std::string result = input;
+    for (char& c : result) {
+        if (c == '/') {
+            c = '_';
+        }
+    }
+    return result;
+}
+static std::string getFileNameFromPath(const std::string& path) {
+    size_t pos = path.find_last_of('/');
+    if (pos == std::string::npos) {
+        return path; // No '/' found, return the whole string
+    }
+    return path.substr(pos + 1);
+}
 
 
 
@@ -251,27 +268,27 @@ private:
     struct Node {
         std::string name;
         Node* parent;
-        std::unordered_map<std::string, std::unique_ptr<Node>> subdirs;
+        std::unordered_map<std::string, Node*> subdirs;
         std::unordered_map<std::string, RefCountedFile> files;
 
         Node(const std::string& name, Node* parent = nullptr)
             : name(name), parent(parent) {}
     };
 
-    std::unique_ptr<Node> root;
+    Node* root;
     Node* current;
 
 public:
     VirtualDirectory() {
-        root = std::make_unique<Node>("V", nullptr);
-        current = root.get();
+        root = new Node("V", nullptr);
+        current = root;
     }
 
     void mkdir(const std::string& dirname) {
         if (current->subdirs.count(dirname)) {
             throw FileException("Directory already exists: " + dirname);
         }
-        current->subdirs[dirname] = std::make_unique<Node>(dirname, current);
+        current->subdirs[dirname] = new Node(dirname, current);
     }
 
     void chdir(const std::string& dirname) {
@@ -280,7 +297,7 @@ public:
                 current = current->parent;
             }
         } else if (current->subdirs.count(dirname)) {
-            current = current->subdirs[dirname].get();
+            current = current->subdirs[dirname];
         } else {
             throw FileException("Directory not found: " + dirname);
         }
@@ -290,7 +307,7 @@ public:
         if (!current->subdirs.count(dirname)) {
             throw FileException("Directory not found: " + dirname);
         }
-        current->subdirs.erase(dirname); // Automatically frees all nested data due to unique_ptr
+        current->subdirs.erase(dirname);
     }
 
     void ls() const {
@@ -305,7 +322,7 @@ public:
     }
 
     void proot() const {
-        printRecursive(root.get(), 0);
+        printRecursive(root, 0);
     }
 
     void printRecursive(Node* node, int depth) const {
@@ -317,7 +334,7 @@ public:
         }
 
         for (const auto& [_, subdir] : node->subdirs) {
-            printRecursive(subdir.get(), depth + 1);
+            printRecursive(subdir, depth + 1);
         }
     }
 
@@ -334,13 +351,36 @@ public:
         std::cout << '\n';
     }
 
-    // Add file to current directory
-    void addFile(const std::string& name, const std::string& realFilePath) {
-        if (current->files.count(name)) {
-            throw FileException("File already exists in virtual directory.");
+
+
+
+    ///////////////////////////////////////////////////////////////////////
+    // Add clean file to system
+    void touch(const std::string& FilePath) {
+        std::string fileName = getFileNameFromPath(FilePath);
+        Node* where = current;
+
+        if (startsWithVSlash(FilePath)) {
+            //TODO here I need first to get the full path
+
+            RefCountedFile::touch(convertSlashesToUnderscores(FilePath));
         }
-        current->files[name] = RefCountedFile(realFilePath);
+        else {
+            RefCountedFile::touch(fileName);
+            // if (current->files.count(getFileNameFromPath(FilePath))) {
+            //     throw FileException("File already exists in virtual directory.");
+            // }
+            //add to this current PWD folder
+            current->files.emplace(fileName, RefCountedFile(fileName));
+        }
+
     }
+    void write(const std::string& FilePath, const int pos, const char character) {
+
+    }
+
+
+
 
     // Get file by name (optional)
     RefCountedFile& getFile(const std::string& name) {

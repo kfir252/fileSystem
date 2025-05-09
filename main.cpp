@@ -109,13 +109,23 @@ void testSystem() {
 
 }
 
+void testSystem2() {
+    VirtualDirectory vd;
+    vd.touch("file.txt");
+    vd.ls();
+    cout << "ok";
+
+}
+
+
 int main() {
     // testCopy();
     // testRemove();
     // testMove();
     // testWC();
     // testLink();
-    testSystem();
+    // testSystem();
+    testSystem2();
     return 0;
 }
 
