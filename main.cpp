@@ -2,6 +2,7 @@
 #include <iostream>
 #include <fstream>
 
+
 using namespace std;
 
 void testCopy() {
@@ -79,12 +80,42 @@ void testLink() {
     //here the file should be deleted from the stuck (and be the distractor from the file system)
 }
 
+
+void testSystem() {
+    VirtualDirectory vd;
+
+    //start pwd
+    vd.pwd();
+
+    //add file
+    RefCountedFile::touch("test.txt");
+    RefCountedFile f1("test.txt");
+
+    //read write
+    f1[0] = 'D';
+    cout << f1[0] << endl;
+
+    //cat check
+    f1[1] = 'e';f1[2] = 'j';f1[3] = 'o';f1[4] = 'n';f1[5] = 'g';
+    f1.cat();
+
+    //should error "no such file name"
+    // RefCountedFile f2("text.txt");
+    // f2.cat();
+
+    //chdir mkdir check
+    vd.mkdir("tmp");
+    vd.ls();
+
+}
+
 int main() {
     // testCopy();
     // testRemove();
     // testMove();
     // testWC();
-    testLink();
+    // testLink();
+    testSystem();
     return 0;
 }
 

@@ -93,6 +93,12 @@ public:
         return c;
     }
 
+    RefCountedFile() {
+        data = nullptr;
+        released = false;
+        // Default constructor logic, if needed
+    }
+
     explicit RefCountedFile(const std::string& filename) {
         data = new FileData(filename);
     }
@@ -228,6 +234,122 @@ public:
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+class VirtualDirectory {
+private:
+    struct Node {
+        std::string name;
+        Node* parent;
+        std::unordered_map<std::string, std::unique_ptr<Node>> subdirs;
+        std::unordered_map<std::string, RefCountedFile> files;
+
+        Node(const std::string& name, Node* parent = nullptr)
+            : name(name), parent(parent) {}
+    };
+
+    std::unique_ptr<Node> root;
+    Node* current;
+
+public:
+    VirtualDirectory() {
+        root = std::make_unique<Node>("V", nullptr);
+        current = root.get();
+    }
+
+    void mkdir(const std::string& dirname) {
+        if (current->subdirs.count(dirname)) {
+            throw FileException("Directory already exists: " + dirname);
+        }
+        current->subdirs[dirname] = std::make_unique<Node>(dirname, current);
+    }
+
+    void chdir(const std::string& dirname) {
+        if (dirname == "..") {
+            if (current->parent) {
+                current = current->parent;
+            }
+        } else if (current->subdirs.count(dirname)) {
+            current = current->subdirs[dirname].get();
+        } else {
+            throw FileException("Directory not found: " + dirname);
+        }
+    }
+
+    void rmdir(const std::string& dirname) {
+        if (!current->subdirs.count(dirname)) {
+            throw FileException("Directory not found: " + dirname);
+        }
+        current->subdirs.erase(dirname); // Automatically frees all nested data due to unique_ptr
+    }
+
+    void ls() const {
+        std::cout << "Folder:" << std::flush;
+        pwd();
+        for (const auto& [name, dir] : current->subdirs) {
+            std::cout << "  [D] " << name << '\n';
+        }
+        for (const auto& [name, file] : current->files) {
+            std::cout << "  [F] " << name << " (refs: " << file.getRefCount() << ")\n";
+        }
+    }
+
+    void proot() const {
+        printRecursive(root.get(), 0);
+    }
+
+    void printRecursive(Node* node, int depth) const {
+        std::string indent(depth * 2, ' ');
+        std::cout << indent << node->name << "/\n";
+
+        for (const auto& [fname, file] : node->files) {
+            std::cout << indent << "  " << fname << " (refs: " << file.getRefCount() << ")\n";
+        }
+
+        for (const auto& [_, subdir] : node->subdirs) {
+            printRecursive(subdir.get(), depth + 1);
+        }
+    }
+
+    void pwd() const {
+        std::vector<std::string> path;
+        Node* temp = current;
+        while (temp) {
+            path.push_back(temp->name);
+            temp = temp->parent;
+        }
+        for (auto it = path.rbegin(); it != path.rend(); ++it) {
+            std::cout << "/" << *it;
+        }
+        std::cout << '\n';
+    }
+
+    // Add file to current directory
+    void addFile(const std::string& name, const std::string& realFilePath) {
+        if (current->files.count(name)) {
+            throw FileException("File already exists in virtual directory.");
+        }
+        current->files[name] = RefCountedFile(realFilePath);
+    }
+
+    // Get file by name (optional)
+    RefCountedFile& getFile(const std::string& name) {
+        if (!current->files.count(name)) {
+            throw FileException("File not found in current directory.");
+        }
+        return current->files[name];
+    }
+};
 
 
 
