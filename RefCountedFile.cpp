@@ -336,8 +336,13 @@ public:
     }
 
     void mkdir(const std::string& path) {
-        Node* where = getNodeFromPath(path);
-        std::string dirname = getFileNameFromPath(path);
+        std::string pathh = path;
+        if (!pathh.empty() && pathh.back() == '/') {
+            pathh.pop_back();
+        }
+
+        Node* where = getNodeFromPath(pathh);
+        std::string dirname = getFileNameFromPath (pathh);
         if (where->subdirs.count(dirname)) {
             throw FileException("folder already exist");
         }
@@ -348,12 +353,21 @@ public:
     }
 
     void chdir(const std::string& path) {
-        current = getNodeFromPathForDirSearch(path);
+        std::string pathh = path;
+        if (!pathh.empty() && pathh.back() == '/') {
+            pathh.pop_back();
+        }
+        current = getNodeFromPathForDirSearch(pathh);
     }
 
     void rmdir(const std::string& path) {
-        Node* father = getNodeFromPath(path);
-        std::string dirname = getFileNameFromPath(path);
+        std::string pathh = path;
+        if (!pathh.empty() && pathh.back() == '/') {
+            pathh.pop_back();
+        }
+
+        Node* father = getNodeFromPath(pathh);
+        std::string dirname = getFileNameFromPath(pathh);
 
         auto it = father->subdirs.find(dirname);
         if (it == father->subdirs.end()) {
@@ -511,6 +525,7 @@ public:
     Node* getNodeFromPathForDirSearch(const std::string& path) const {
         if (path.empty()) return nullptr;
 
+
         // Remove the last component after the final '/'
         size_t lastSlash = path.find_last_of('/');
         if (lastSlash == std::string::npos) {
@@ -547,8 +562,13 @@ public:
     }
 
     //the most important thing here for working with full paths
-    Node* getNodeFromPath(const std::string& path) {
-        if (path.empty()) return nullptr;
+    Node* getNodeFromPath(const std::string& pathh) {
+        if (pathh.empty()) return nullptr;
+
+        std::string path = pathh;
+        if (!pathh.empty() && pathh.back() == '/') {
+            path.pop_back();
+        }
 
         // Remove the last component after the final '/'
         size_t lastSlash = path.find_last_of('/');
