@@ -342,6 +342,9 @@ public:
         }
 
         Node* where = getNodeFromPath(pathh);
+        if (where == nullptr) {
+            throw FileException("bad given path");
+        }
         std::string dirname = getFileNameFromPath (pathh);
         if (where->subdirs.count(dirname)) {
             throw FileException("folder already exist");
@@ -357,7 +360,11 @@ public:
         if (!pathh.empty() && pathh.back() == '/') {
             pathh.pop_back();
         }
-        current = getNodeFromPathForDirSearch(pathh);
+        Node* place = getNodeFromPathForDirSearch(pathh);
+        if (place == nullptr) {
+            throw FileException("folder not exist");
+        }
+        current = place;
     }
 
     void rmdir(const std::string& path) {
@@ -368,6 +375,11 @@ public:
 
         Node* father = getNodeFromPath(pathh);
         std::string dirname = getFileNameFromPath(pathh);
+
+        Node* place = getNodeFromPathForDirSearch(pathh);
+        if (place == nullptr) {
+            throw FileException("folder not exist");
+        }
 
         auto it = father->subdirs.find(dirname);
         if (it == father->subdirs.end()) {
