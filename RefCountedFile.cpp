@@ -277,6 +277,14 @@ private:
 
         Node(const std::string& name, Node* parent = nullptr)
             : name(name), parent(parent) {}
+
+        ~Node() {
+            for (auto& [_, subdir] : subdirs) {
+                delete subdir; // recursively delete subdirectories
+            }
+            subdirs.clear(); // optional but clean
+            files.clear();   // release all files
+        }
     };
 
     Node* root;
@@ -294,11 +302,24 @@ private:
         }
         std::cout << std::flush;
     }
+    void deleteRecursive(Node* node) {
+        if (!node) return;
+
+        for (auto& [_, subdir] : node->subdirs) {
+            deleteRecursive(subdir);
+        }
+
+        // No need to manually delete RefCountedFiles if they manage memory themselves
+        delete node;
+    }
 
 public:
     VirtualDirectory() {
         root = new Node("V", nullptr);
         current = root;
+    }
+    ~VirtualDirectory() {
+        deleteRecursive(root);
     }
 
     void mkdir(const std::string& path) {
@@ -321,11 +342,13 @@ public:
         Node* father = getNodeFromPath(path);
         std::string dirname = getFileNameFromPath(path);
 
-
-        if (!father->subdirs.count(dirname)) {
+        auto it = father->subdirs.find(dirname);
+        if (it == father->subdirs.end()) {
             throw FileException("Directory not found: " + dirname);
         }
-        father->subdirs.erase(dirname);
+
+        delete it->second;  // free memory, recursively
+        father->subdirs.erase(it);
     }
 
     void ls(const std::string& path) const {
