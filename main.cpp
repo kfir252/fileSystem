@@ -128,11 +128,11 @@ void testSystem2() {
 
     vd.copy("file.txt", "file2.txt");
     vd.copy("file.txt", "V/tmp2/fafa.t");
-    vd.proot();
+    vd.lproot();
 
     vd.remove("V/tmp2/fafa.t");
     vd.remove("file.txt");
-    vd.proot();
+    vd.lproot();
 
     vd.cat("file2.txt");
     vd.cat("V/tmp1/lalala/file2.txt");
@@ -153,7 +153,7 @@ void testSystem3() {
     vd.pwd();
 
 
-    vd.proot();
+    vd.lproot();
 }
 
 
@@ -164,14 +164,14 @@ void testSystem4() {
     vd.mkdir("V/tmp2/dddddddddd");
     vd.mkdir("V/tmp2/1");
     vd.mkdir("V/tmp2/1/okokok");
-    vd.proot();
+    vd.lproot();
 
     vd.chdir("V/tmp2");
     vd.pwd();
     vd.rmdir("1");
 
 
-    vd.proot();
+    vd.lproot();
 }
 
 void testSystem5() {
@@ -198,24 +198,62 @@ void testSystem6() {
     vd.cat("V/tmp1/test.txt");
     vd.cat("V/tmp1/test.txt");
 
-    vd.proot();
+    vd.lproot();
 
     vd.move("V/tmp1/test.txt", "V/tmp1/test.txt");
-    vd.proot();
+    vd.lproot();
     vd.cat("V/tmp1/test.txt");
 }
+
+void testSystem7() {
+    VirtualDirectory vd;
+    vd.mkdir("tmp1");
+
+    vd.touch("V/tmp1/test.txt");
+    vd.write("V/tmp1/test.txt", 0, 'W');
+    vd.cat("V/tmp1/test.txt");
+    vd.cat("V/tmp1/test.txt");
+
+    vd.lproot();
+    vd.ln("V/tmp1/test.txt", "V/test2.txt");
+
+    vd.lproot();
+    vd.cat("V/tmp1/test.txt");
+}
+
+void finalTest() {
+    VirtualDirectory vd;
+    vd.pwd();
+
+    vd.touch("V/test.txt");
+    vd.write("V/test.txt", 0, 'd');
+    vd.write("V/test.txt", 0, 'd');
+    vd.read("V/test.txt", 0);
+
+    vd.write("V/test.txt", 1, 'e');
+    vd.write("V/test.txt", 2, 'J');
+    vd.write("V/test.txt", 3, 'o');
+    vd.write("V/test.txt", 4, 'n');
+    vd.write("V/test.txt", 5, 'g');
+
+    // vd.cat("V/text.txt");
+    vd.cat("V/test.txt");
+
+    vd.mkdir("V/tmp");
+    vd.chdir("V/tmp");
+    vd.pwd();
+    vd.ls("V/tmp");
+
+    vd.copy("V/test.txt", "V/tmp/t.dat");
+    vd.copy("FS.txt", "V/tmp/f.cc");
+    vd.ln("V/tmp/f.cc", "V/tmp/FS.txt");
+    vd.lproot();
+
+    vd.rmdir("V/tmp");
+    vd.lproot();
+}
 int main() {
-    // testCopy();
-    // testRemove();
-    // testMove();
-    // testWC();
-    // testLink();
-    // testSystem();
-    // testSystem2();
-    // testSystem3();
-    // testSystem4();
-    // testSystem5();
-    testSystem6();
+    finalTest();
     return 0;
 
 }

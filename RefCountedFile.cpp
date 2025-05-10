@@ -282,6 +282,19 @@ private:
     Node* root;
     Node* current;
 
+    void pwdNoEndl() const {
+        std::vector<std::string> path;
+        Node* temp = current;
+        while (temp) {
+            path.push_back(temp->name);
+            temp = temp->parent;
+        }
+        for (auto it = path.rbegin(); it != path.rend(); ++it) {
+            std::cout << *it << "/";
+        }
+        std::cout << std::flush;
+    }
+
 public:
     VirtualDirectory() {
         root = new Node("V", nullptr);
@@ -317,9 +330,8 @@ public:
 
     void ls(const std::string& path) const {
         Node* folder = getNodeFromPathForDirSearch(path);
-        std::cout << "Folder:" << std::flush;
-
-        pwd();
+        pwdNoEndl();
+        std::cout << ":" << std::endl;
 
         for (const auto& [name, dir] : folder->subdirs) {
             std::cout << "  [D] " << name << '\n';
@@ -329,7 +341,7 @@ public:
         }
     }
 
-    void proot() const {
+    void lproot() const {
         printRecursive(root, 0);
     }
 
@@ -357,7 +369,7 @@ public:
         for (auto it = path.rbegin(); it != path.rend(); ++it) {
             std::cout << *it << "/";
         }
-        std::cout << '\n';
+        std::cout << std::endl;
     }
 
 
@@ -384,6 +396,10 @@ public:
         std::cout << it[pos] << std::endl;
     }
     void copy(const std::string& FilePathSrc, const std::string& FilePathDst) {
+        if (FilePathSrc == FilePathDst) {
+            return;
+        }
+
         std::string srcFileName = getFileNameFromPath(FilePathSrc);
         std::string dstFileName = getFileNameFromPath(FilePathDst);
 
@@ -424,7 +440,22 @@ public:
         auto it = getRefCountedFileFromPath(FilePath);
         it.wc();
     }
+    void ln(const std::string& FilePathSrc, const std::string& FilePathDst) {
+        if (FilePathSrc == FilePathDst) {
+            return;
+        }
 
+        std::string srcFileName = getFileNameFromPath(FilePathSrc);
+        std::string dstFileName = getFileNameFromPath(FilePathDst);
+        auto fileToHardCopy = getRefCountedFileFromPath(FilePathSrc);
+
+
+        Node* where = current;
+        if (startsWithVSlash(FilePathDst))
+            where = getNodeFromPath(FilePathDst);
+
+        where->files.emplace(dstFileName, RefCountedFile(fileToHardCopy));
+    }
 
 
     //the most important thing here for working with full paths
