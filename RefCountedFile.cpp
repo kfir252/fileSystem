@@ -104,15 +104,25 @@ public:
     }
 
     RefCountedFile(const RefCountedFile& other) {
-        data = other.data;
-        data->refCount++;
+        if (other.data) {
+            data = other.data;
+            data->refCount++;
+        } else {
+            data = nullptr;
+        }
+        released = false;
     }
 
     RefCountedFile& operator=(const RefCountedFile& other) {
         if (this != &other) {
             release();
-            data = other.data;
-            data->refCount++;
+            if (other.data) {
+                data = other.data;
+                data->refCount++;
+            } else {
+                data = nullptr;
+            }
+            released = false;
         }
         return *this;
     }
@@ -124,16 +134,19 @@ public:
     }
 
     void release() {
-        if (!released && --data->refCount == 0) {
-            std::string filenameToDelete = data->filename;
-            delete data;
-            try {
-                std::filesystem::remove(filenameToDelete);
-            } catch (const std::filesystem::filesystem_error& e) {
-                std::cerr << "Warning: Failed to delete file: " << e.what() << std::endl;
+        if (!released && data) {
+            if (--data->refCount == 0) {
+                std::string filenameToDelete = data->filename;
+                delete data;
+                try {
+                    std::filesystem::remove(filenameToDelete);
+                } catch (const std::filesystem::filesystem_error& e) {
+                    std::cerr << "Warning: Failed to delete file: " << e.what() << std::endl;
+                }
             }
+            released = true;
+            data = nullptr;
         }
-        released = true;
     }
 
 
@@ -319,7 +332,7 @@ public:
         current = root;
     }
     ~VirtualDirectory() {
-        deleteRecursive(root);
+        delete root;
     }
 
     void mkdir(const std::string& path) {
@@ -427,6 +440,7 @@ public:
         std::string dstFileName = getFileNameFromPath(FilePathDst);
 
         touch(FilePathDst);
+        touch(FilePathSrc);
         RefCountedFile::copy(srcFileName, dstFileName);
     }
     void remove(const std::string& FilePath) {
@@ -477,7 +491,10 @@ public:
         if (startsWithVSlash(FilePathDst))
             where = getNodeFromPath(FilePathDst);
 
-        where->files.emplace(dstFileName, RefCountedFile(fileToHardCopy));
+        if (where->files.find(dstFileName) != where->files.end()) {
+            where->files.erase(dstFileName);  // Deletes the existing object
+        }
+        where->files.emplace(dstFileName, RefCountedFile(fileToHardCopy));  // Inserts the new one
     }
 
 
