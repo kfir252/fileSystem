@@ -440,7 +440,16 @@ public:
         std::string dstFileName = getFileNameFromPath(FilePathDst);
 
         touch(FilePathDst);
-        touch(FilePathSrc);
+        Node* where = current;
+
+        if (startsWithVSlash(FilePathSrc))
+            where = getNodeFromPath(FilePathSrc);
+
+        auto it = where->files.find(srcFileName);
+        if (it == where->files.end()) {
+            touch(FilePathSrc);
+        }
+
         RefCountedFile::copy(srcFileName, dstFileName);
     }
     void remove(const std::string& FilePath) {

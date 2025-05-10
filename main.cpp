@@ -252,9 +252,103 @@ void finalTest() {
     vd.rmdir("V/tmp");
     vd.lproot();
 }
-int main() {
-    finalTest();
-    return 0;
+
+void runConsole() {
+    VirtualDirectory vd;
+    std::string line;
+    while (true) {
+        std::getline(std::cin, line);
+        std::istringstream iss(line);
+        std::string command;
+        iss >> command;
+
+        if (command == "exit") break;
+
+        try {
+            if (command == "pwd") {
+                // [15] Print current directory
+                vd.pwd();
+            } else if (command == "touch") {
+                // [3] Create empty file
+                std::string filename;
+                iss >> filename;
+                vd.touch(filename);
+            } else if (command == "write") {
+                // [2] Write character to file at position
+                std::string filename;
+                int position;
+                char character;
+                iss >> filename >> position >> character;
+                vd.write(filename, position, character);
+            } else if (command == "read") {
+                // [1] Read character at position
+                std::string filename;
+                int position;
+                iss >> filename >> position;
+                vd.read(filename, position);
+            } else if (command == "cat") {
+                // [7] Output file content
+                std::string filename;
+                iss >> filename;
+                vd.cat(filename);
+            } else if (command == "wc") {
+                // [8] Count words in the file
+                std::string filename;
+                iss >> filename;
+                vd.wc(filename);
+            } else if (command == "mkdir") {
+                // [10] Create directory
+                std::string foldername;
+                iss >> foldername;
+                vd.mkdir(foldername);
+            } else if (command == "chdir") {
+                // [11] Change current directory
+                std::string foldername;
+                iss >> foldername;
+                vd.chdir(foldername);
+            } else if (command == "ls") {
+                // [13] List contents of directory
+                std::string foldername;
+                if (iss >> foldername)
+                    vd.ls(foldername);
+            } else if (command == "rmdir") {
+                // [12] Remove directory
+                std::string foldername;
+                iss >> foldername;
+                vd.rmdir(foldername);
+            } else if (command == "copy") {
+                // [4] Copy file
+                std::string src, dest;
+                iss >> src >> dest;
+                vd.copy(src, dest);
+            } else if (command == "remove") {
+                // [5] Remove file
+                std::string filename;
+                iss >> filename;
+                vd.remove(filename);
+            } else if (command == "move") {
+                // [6] Move file
+                std::string src, dest;
+                iss >> src >> dest;
+                vd.move(src, dest);
+            } else if (command == "ln") {
+                // [9] Create symbolic link
+                std::string target, linkName;
+                iss >> target >> linkName;
+                vd.ln(target, linkName);
+            } else if (command == "lproot") {
+                // [14] Print all root files and folders
+                vd.lproot();
+            } else {
+                std::cerr << "ERROR: unknown command\n";
+            }
+        } catch (const std::exception& e) {
+            std::cerr << "ERROR: " << e.what() << "\n";
+        }
+    }
 }
 
-
+int main() {
+    runConsole();
+    return 0;
+}
