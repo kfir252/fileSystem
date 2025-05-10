@@ -303,9 +303,9 @@ private:
     Node* root;
     Node* current;
 
-    void pwdNoEndl() const {
+    void pwdNoEndl(Node* folder) const {
         std::vector<std::string> path;
-        Node* temp = current;
+        Node* temp = folder;
         while (temp) {
             path.push_back(temp->name);
             temp = temp->parent;
@@ -380,7 +380,7 @@ public:
 
     void ls(const std::string& path) const {
         Node* folder = getNodeFromPathForDirSearch(path);
-        pwdNoEndl();
+        pwdNoEndl(folder);
         std::cout << ":" << std::endl;
 
         for (const auto& [name, dir] : folder->subdirs) {
