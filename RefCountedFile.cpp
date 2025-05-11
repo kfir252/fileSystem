@@ -8,6 +8,7 @@
 #include <unordered_map>
 #include <vector>
 #include <sstream>
+#include <utime.h>
 
 //this is for my version
 #include <filesystem>
@@ -156,12 +157,19 @@ public:
 
     // Creates the file if it doesn't exist and updates its modification time
     static void touch(const std::string& filename) {
+        // Create or open the file with append mode
         std::ofstream f(filename, std::ios::app);
         if (!f) throw FileException("Cannot touch file: " + filename);
         f.close();
 
-        // Update the last write time to now
-        std::filesystem::last_write_time(filename, std::filesystem::file_time_type::clock::now());
+        // Update the last write time to now using utime()
+        struct utimbuf new_times;
+        new_times.actime = time(nullptr);  // current time for last access
+        new_times.modtime = time(nullptr); // current time for last modification
+
+        if (utime(filename.c_str(), &new_times) != 0) {
+            throw FileException("Failed to update modification time for: " + filename);
+        }
     }
 
     // Copy contents from one file to another
@@ -180,11 +188,11 @@ public:
         out << in.rdbuf();  // Stream buffer copy
     }
 
-    // Delete a file
+    // Removes the file
     static void remove(const std::string& filename) {
-
-        if (!std::filesystem::remove(filename))
+        if (std::remove(filename.c_str()) != 0) {
             throw FileException("Failed to remove file: " + filename);
+        }
     }
 
     // Move file from src to dst (copy then remove)
