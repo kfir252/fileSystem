@@ -1,16 +1,22 @@
 
-// Includes for file and string operations, exceptions, I/O, filesystem, time, and smart pointers
 #include <fstream>
 #include <string>
 #include <stdexcept>
 #include <iostream>
-#include <filesystem>
 #include <ctime>
 #include <memory>
 #include <unordered_map>
 #include <vector>
 #include <sstream>
 
+//this is for my version
+#include <filesystem>
+
+//this is for the colage compiler version
+// #include <experimental/filesystem>
+// namespace std {
+//     namespace filesystem = experimental::filesystem;
+// }
 
 
 // Custom exception for file-related errors
@@ -138,17 +144,15 @@ public:
             if (--data->refCount == 0) {
                 std::string filenameToDelete = data->filename;
                 delete data;
-                try {
-                    std::filesystem::remove(filenameToDelete);
-                } catch (const std::filesystem::filesystem_error& e) {
-                    std::cerr << "Warning: Failed to delete file: " << e.what() << std::endl;
+                // Use remove() from <cstdio> to delete the file
+                if (std::remove(filenameToDelete.c_str()) != 0) {
+                    std::cerr << "Warning: Failed to delete file: " << filenameToDelete << std::endl;
                 }
             }
             released = true;
             data = nullptr;
         }
     }
-
 
     // Creates the file if it doesn't exist and updates its modification time
     static void touch(const std::string& filename) {
@@ -249,15 +253,15 @@ public:
 static bool startsWithVSlash(const std::string& input) {
     return input.size() >= 2 && input[0] == 'V' && input[1] == '/';
 }
-static std::string convertSlashesToUnderscores(const std::string& input) {
-    std::string result = input;
-    for (char& c : result) {
-        if (c == '/') {
-            c = '_';
-        }
-    }
-    return result;
-}
+// static std::string convertSlashesToUnderscores(const std::string& input) {
+//     std::string result = input;
+//     for (char& c : result) {
+//         if (c == '/') {
+//             c = '_';
+//         }
+//     }
+//     return result;
+// }
 static std::string getFileNameFromPath(const std::string& path) {
     size_t pos = path.find_last_of('/');
     if (pos == std::string::npos) {
@@ -292,7 +296,8 @@ private:
             : name(name), parent(parent) {}
 
         ~Node() {
-            for (auto& [_, subdir] : subdirs) {
+            for (auto& pair : subdirs) {
+                auto& subdir = pair.second;
                 delete subdir; // recursively delete subdirectories
             }
             subdirs.clear(); // optional but clean
@@ -318,7 +323,8 @@ private:
     void deleteRecursive(Node* node) {
         if (!node) return;
 
-        for (auto& [_, subdir] : node->subdirs) {
+        for (auto& pair : node->subdirs) {
+            auto& subdir = pair.second;
             deleteRecursive(subdir);
         }
 
@@ -395,10 +401,14 @@ public:
         pwdNoEndl(folder);
         std::cout << ":" << std::endl;
 
-        for (const auto& [name, dir] : folder->subdirs) {
+        for (const auto& pair : folder->subdirs) {
+            const auto& name = pair.first;
             std::cout << "  [D] " << name << '\n';
         }
-        for (const auto& [name, file] : folder->files) {
+
+        for (const auto& pair : folder->files) {
+            const auto& name = pair.first;
+            const auto& file = pair.second;
             std::cout << "  [F] " << name << " (refs: " << file.getRefCount() << ")\n";
         }
     }
@@ -411,12 +421,14 @@ public:
         std::string indent(depth * 2, ' ');
         std::cout << indent << node->name << "/\n" << std::flush;
 
-        for (const auto& [fname, file] : node->files) {
+        for (const auto& pair : node->files) {
+            const auto& fname = pair.first;
+            const auto& file = pair.second;
             std::cout << indent << "  " << fname << " (refs: " << file.getRefCount() << ")\n";
         }
 
-        for (const auto& [_, subdir] : node->subdirs) {
-            printRecursive(subdir, depth + 1);
+        for (const auto& pair : node->subdirs) {
+            printRecursive(pair.second, depth + 1);
         }
         std::cout << std::flush;
     }
